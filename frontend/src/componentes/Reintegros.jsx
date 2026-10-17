@@ -80,7 +80,7 @@ function DesplegableInstitucionesConReintegros({ institucionId, institucionTexto
           return <option key={`${value}:${n}`} value={value}>{i.nombre}{i.codigo ? ` (${i.codigo})` : ''} · {detalle}</option>;
         })}
       </select>
-      {error && <small className="err" role="alert">Error al cargar las instituciones con reintegros.</small>}
+      {error && <small className="err" role="alert">No se pudieron cargar las instituciones con reintegros: {error.message}</small>}
     </>
   );
 }

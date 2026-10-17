@@ -108,9 +108,8 @@ async function institucionesConReintegros(f = {}) {
       coalesce(i.nombre, r.institucion_texto, 'Sin institución') AS nombre,
       i.codigo, i.municipio, count(*) AS registros, coalesce(sum(r.cantidad), 0) AS elementos
     FROM reintegros r LEFT JOIN instituciones i ON i.id = r.institucion_id
-    LEFT JOIN usuarios u ON u.id = r.creado_por LEFT JOIN usuarios ua ON ua.id = r.actualizado_por${where}
-    GROUP BY r.institucion_id, i.nombre, i.codigo, i.municipio,
-      CASE WHEN r.institucion_id IS NULL THEN r.institucion_texto END
+  ${where}
+    GROUP BY 1, 2, 3, 4
     ORDER BY nombre`, params);
   return rows.map(x => Object.assign(x, { registros: Number(x.registros), elementos: Number(x.elementos) }));
 }
