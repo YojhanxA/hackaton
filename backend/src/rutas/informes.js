@@ -10,6 +10,13 @@ r.get('/informes/resumen', asincrono(async (req, res) => {
   res.json(await informes.resumen(F.leerFiltros(req.query)));
 }));
 
+r.get('/informes/articulos-institucion', asincrono(async (req, res) => {
+  const f = F.leerFiltros(req.query);
+  const pagina = Math.max(1, parseInt(req.query.pagina, 10) || 1);
+  const porPagina = Math.min(100, Math.max(5, parseInt(req.query.por_pagina, 10) || 20));
+  res.json(await informes.articulosPorInstitucion(f, pagina, porPagina));
+}));
+
 r.get('/informes/reintegros.xlsx', asincrono(async (req, res) => {
   const f = F.leerFiltros(req.query);
   const { buffer, filas } = await informes.excel(f);

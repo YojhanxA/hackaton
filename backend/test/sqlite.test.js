@@ -84,6 +84,20 @@ test('migrates idempotently and supports application transactions on SQLite', as
   assert.equal(informe.body.total_registros, 1);
   assert.ok(informe.body.por_categoria.length >= 2);
 
+  for (const [cantidad, descripcion] of [[44, '44 SILLAS UNIVERSITARIAS'], [31, 'Silla universitaria']]) {
+    await request(app).post('/api/reintegros').set(auth).send({
+      institucion_id: resultado.institucion.id, institucion_texto: null, fecha_reintegro: '2026-01-02',
+      placa: null, cantidad, descripcion, referencia_soporte: null, valor: null, estado: 'realizado', observaciones: null
+    }).expect(201);
+  }
+  const consolidado = await request(app)
+    .get(`/api/informes/articulos-institucion?institucion_id=${resultado.institucion.id}&categoria=mobiliario`)
+    .set(auth).expect(200);
+  assert.equal(consolidado.body.total, 1);
+  assert.equal(consolidado.body.datos[0].articulo, 'SILLA');
+  assert.equal(consolidado.body.datos[0].registros, 2);
+  assert.equal(consolidado.body.datos[0].elementos, 75);
+
   const archivoEjemplo = path.join(__dirname, '..', '..', 'docs', 'ejemplos', 'acta_reintegro_EJEMPLO.xlsx');
   const previa = await request(app)
     .post('/api/importaciones')

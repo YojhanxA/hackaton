@@ -82,6 +82,26 @@ async function resumen(f) {
   };
 }
 
+async function articulosPorInstitucion(f, pagina = 1, porPagina = 20) {
+  const { where, params } = F.construir(f);
+  const grupo = `coalesce(i.nombre, r.institucion_texto, 'Sin institución'), coalesce(r.articulo, 'SIN DESCRIPCION'), coalesce(r.categoria, 'electrico')`;
+  const [datos, total] = await Promise.all([
+    consultar(`SELECT coalesce(i.nombre, r.institucion_texto, 'Sin institución') AS institucion, r.institucion_id,
+        coalesce(r.articulo, 'SIN DESCRIPCION') AS articulo, coalesce(r.categoria, 'electrico') AS categoria,
+        count(*) AS registros, coalesce(sum(r.cantidad), 0) AS elementos
+      ${F.FROM}${where} GROUP BY ${grupo}, r.institucion_id
+      ORDER BY elementos DESC, registros DESC, institucion, articulo LIMIT ${porPagina} OFFSET ${(pagina - 1) * porPagina}`, params),
+    consultar(`SELECT count(*) AS n FROM (
+        SELECT r.institucion_id, ${grupo}
+        ${F.FROM}${where} GROUP BY ${grupo}, r.institucion_id
+      ) AS articulos_agrupados`, params)
+  ]);
+  return {
+    datos: datos.rows.map(x => Object.assign(x, { registros: Number(x.registros), elementos: Number(x.elementos) })),
+    total: Number(total.rows[0].n), pagina, por_pagina: porPagina
+  };
+}
+
 /* ---------- Excel ---------- */
 const fechaExcel = iso => (iso ? new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10))) : null);
 const horaBogota = ts => (ts ? new Date(new Date(ts).getTime() - 5 * 3600000) : null); // Excel no maneja zonas: se escribe la hora local
@@ -167,4 +187,4 @@ async function excel(f) {
   return { buffer: await wb.xlsx.writeBuffer(), filas: det.rows.length };
 }
 
-module.exports = { resumen, excel, ETQ, CAT };
+module.exports = { resumen, articulosPorInstitucion, excel, ETQ, CAT };

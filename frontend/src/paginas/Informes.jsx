@@ -15,6 +15,8 @@ export default function Informes() {
   const avisar = useAvisos();
   const [filtros, setFiltros] = useState(FILTROS_VACIOS);
   const [pagina, setPagina] = useState(1);
+  const [paginaAgrupada, setPaginaAgrupada] = useState(1);
+  const [vistaAgrupada, setVistaAgrupada] = useState(false);
   const [exportando, setExportando] = useState(false);
   const [generandoPdf, setGenerandoPdf] = useState(false);
   const [verObjetos, setVerObjetos] = useState(15);
@@ -22,7 +24,11 @@ export default function Informes() {
   const consulta = qs(filtros);
   const { datos: r, cargando, error, recargar } = useDatos('/informes/resumen' + consulta, { activo: fechasOk });
   const { datos: det, cargando: cargDet } = useDatos('/reintegros' + qs({ ...filtros, pagina, por_pagina: 10, orden: 'fecha' }), { activo: fechasOk });
-  const cambiar = f => { setFiltros(f); setPagina(1); };
+  const { datos: agr, cargando: cargAgr, error: errorAgr, recargar: recargarAgr } = useDatos(
+    '/informes/articulos-institucion' + qs({ ...filtros, pagina: paginaAgrupada, por_pagina: 20 }),
+    { activo: fechasOk && vistaAgrupada }
+  );
+  const cambiar = f => { setFiltros(f); setPagina(1); setPaginaAgrupada(1); };
 
   const exportar = async () => {
     setExportando(true);
@@ -123,16 +129,35 @@ export default function Informes() {
           </div>
 
           <section className="tarjeta">
-            <div className="tarjeta-h"><h2>Registros que se exportarán</h2><span className="m">Mismos filtros del resumen y del Excel</span></div>
-            {cargDet && !det ? <Cargando /> : det && (
-              <>
-                <Tabla filas={det.datos} columnas={[
-                  { k: 'codigo', t: 'Código', clase: 'mono' }, { k: 'f', t: 'Fecha', clase: 'nw', render: x => fecha(x.fecha_reintegro) },
-                  { k: 'i', t: 'Institución', render: x => x.institucion_nombre || x.institucion_texto || '—' }, { k: 'd', t: 'Elemento', render: x => <span className="doble"><span>{x.descripcion} ×{x.cantidad}</span><small>{x.articulo} · {CATEGORIAS[x.categoria]?.t || ''}</small></span> },
-                  { k: 'valor', t: 'Valor', clase: 'num', render: x => cop(x.valor) }, { k: 'estado', t: 'Estado', render: x => <EstadoReintegro estado={x.estado} /> }]} />
-                <Paginacion pagina={det.pagina} porPagina={det.por_pagina} total={det.total} alCambiar={setPagina} />
-              </>
-            )}
+            <div className="tarjeta-h">
+              <h2>{vistaAgrupada ? 'Artículos por institución y familia' : 'Registros que se exportarán'}</h2>
+              <div className="en-linea" role="group" aria-label="Vista de artículos del informe">
+                <button type="button" className={'btn xs' + (!vistaAgrupada ? ' pri' : '')} aria-pressed={!vistaAgrupada} onClick={() => setVistaAgrupada(false)}>Registros</button>
+                <button type="button" className={'btn xs' + (vistaAgrupada ? ' pri' : '')} aria-pressed={vistaAgrupada} onClick={() => setVistaAgrupada(true)}>Consolidado</button>
+              </div>
+            </div>
+            {!vistaAgrupada
+              ? cargDet && !det ? <Cargando /> : det && (
+                <>
+                  <p className="m">Cada reintegro individual se conserva con su código y fecha.</p>
+                  <Tabla filas={det.datos} columnas={[
+                    { k: 'codigo', t: 'Código', clase: 'mono' }, { k: 'f', t: 'Fecha', clase: 'nw', render: x => fecha(x.fecha_reintegro) },
+                    { k: 'i', t: 'Institución', render: x => x.institucion_nombre || x.institucion_texto || '—' }, { k: 'd', t: 'Elemento', render: x => <span className="doble"><span>{x.descripcion} ×{x.cantidad}</span><small>{x.articulo} · {CATEGORIAS[x.categoria]?.t || ''}</small></span> },
+                    { k: 'valor', t: 'Valor', clase: 'num', render: x => cop(x.valor) }, { k: 'estado', t: 'Estado', render: x => <EstadoReintegro estado={x.estado} /> }]} />
+                  <Paginacion pagina={det.pagina} porPagina={det.por_pagina} total={det.total} alCambiar={setPagina} />
+                </>
+              )
+              : cargAgr && !agr ? <Cargando /> : errorAgr ? <MensajeError error={errorAgr} alReintentar={recargarAgr} /> : agr && (
+                <>
+                  <p className="m">Suma las cantidades que comparten institución y familia. No modifica ni elimina los reintegros originales.</p>
+                  <Tabla claveFila={x => `${x.institucion_id || x.institucion}:${x.articulo}:${x.categoria}`} filas={agr.datos} columnas={[
+                    { k: 'institucion', t: 'Institución' },
+                    { k: 'articulo', t: 'Familia', render: x => <span className="doble"><b>{x.articulo}</b><small>{CATEGORIAS[x.categoria]?.t || '—'}</small></span> },
+                    { k: 'registros', t: 'Registros', clase: 'num', render: x => num(x.registros) },
+                    { k: 'elementos', t: 'Elementos sumados', clase: 'num', render: x => num(x.elementos) }]} />
+                  <Paginacion pagina={agr.pagina} porPagina={agr.por_pagina} total={agr.total} alCambiar={setPaginaAgrupada} />
+                </>
+              )}
           </section>
         </div>
       )}
