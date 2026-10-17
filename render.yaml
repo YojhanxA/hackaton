@@ -1,7 +1,5 @@
 # Despliegue en Render con un clic (Blueprint): un servicio web (API + frontend compilado) y PostgreSQL.
 # Render → New → Blueprint → elige este repositorio. Te pedirá ADMIN_CLAVE (mínimo 12 caracteres).
-# Después de desplegar el contrato en Polygon Amoy, pon su dirección en VITE_CONTRATO y vuelve a desplegar
-# (las variables VITE_ se incrustan en el frontend al compilar).
 services:
   - type: web
     name: traza-educativa
@@ -27,12 +25,6 @@ services:
       - key: ADMIN_USUARIO
         value: admin
       - key: ADMIN_CLAVE
-        sync: false
-      # Reintegros de DEMOSTRACIÓN (marcados DEMO-) para que la demo no arranque vacía.
-      # Se pueden borrar desde Configuración → Datos de demostración.
-      - key: SEMBRAR_DEMO
-        value: "si"
-      - key: VITE_CONTRATO
         sync: false
 
 databases:

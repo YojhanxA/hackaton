@@ -89,7 +89,7 @@ npm run dev                          # http://localhost:5173
 
 En **Reintegros → Importar Excel** puedes revisar las actas `.xlsx` antes de confirmar su importación. La fecha se toma del acta y, si falta, se extrae del nombre del archivo cuando contiene una fecha completa (por ejemplo `15-03-2026`, `2026-03-15` o `15 de marzo de 2026`). Un nombre con solo mes y año no se convierte en una fecha inventada. El archivo de prueba ficticio está en `docs/ejemplos/acta_reintegro_EJEMPLO.xlsx`. En el mapa se puede planificar la recogida óptima de reintegros pendientes; Informes incorpora clasificación por artículo/categoría y exportación PDF.
 
-En despliegue, `render.yaml` configura un servicio web que compila y sirve el frontend y la API, junto con PostgreSQL. Configura `ADMIN_CLAVE` al desplegar; no se modifica la contraseña de administradores ya existentes.
+En despliegue, `render.yaml` configura un Blueprint de Render con un servicio web que compila y sirve el frontend y la API, junto con PostgreSQL. En Render usa **New → Blueprint** y selecciona este repositorio (no crees un Web Service manual). Configura `ADMIN_CLAVE` con al menos 12 caracteres; no se modifica la contraseña de administradores ya existentes. La base nueva carga las instituciones iniciales, pero no agrega reintegros de demostración. El frontend y la API quedan en el mismo dominio, por lo que no hace falta configurar `FRONTEND_ORIGINS`.
 
 En despliegue, configura `DATABASE_URL` con una URL `postgres://` o `postgresql://` y `DATABASE_SSL` según el proveedor. Producción requiere PostgreSQL; SQLite se usa para desarrollo local.
 

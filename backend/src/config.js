@@ -19,7 +19,7 @@ const config = {
   databaseSsl: process.env.DATABASE_SSL === 'true',
   jwtSecreto: process.env.JWT_SECRET || '',
   jwtDuracion: process.env.JWT_EXPIRES_IN || '8h',
-  origenesFrontend: (process.env.FRONTEND_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173')
+  origenesFrontend: (process.env.FRONTEND_ORIGINS || (produccion ? '' : 'http://localhost:5173,http://127.0.0.1:5173'))
     .split(',').map(s => s.trim().replace(/\/$/, '')).filter(Boolean),
 
   // Imágenes: el backend guarda los archivos en disco; PostgreSQL guarda metadatos y referencias.
