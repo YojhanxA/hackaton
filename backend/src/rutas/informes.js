@@ -6,6 +6,10 @@ const F = require('../servicios/filtrosReintegros');
 
 const r = express.Router();
 
+r.get('/informes/instituciones', asincrono(async (req, res) => {
+  res.json({ datos: await informes.institucionesConReintegros(F.leerFiltros(req.query)) });
+}));
+
 r.get('/informes/resumen', asincrono(async (req, res) => {
   res.json(await informes.resumen(F.leerFiltros(req.query)));
 }));

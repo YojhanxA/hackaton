@@ -11,6 +11,7 @@ const esquemaFiltros = z.object({
   estado: z.string().optional().transform(s => (s ? s.split(',').map(x => x.trim()).filter(Boolean) : []))
     .refine(a => a.every(e => ESTADOS.includes(e)), 'Estado inválido.'),
   institucion_id: z.coerce.number().int().positive().optional(),
+  institucion_texto: z.string().trim().min(1).max(255).optional(),
   municipio: z.string().trim().max(100).optional(),
   categoria: z.enum(['mobiliario', 'electrico'], { errorMap: () => ({ message: 'Categoría inválida.' }) }).optional(),
   articulo: z.string().trim().max(120).optional(),
@@ -33,6 +34,7 @@ function construir(f, params = []) {
   if (f.hasta) add('r.fecha_reintegro <= ?', f.hasta);
   if (f.estado && f.estado.length) add('r.estado = ANY(?)', f.estado);
   if (f.institucion_id) add('r.institucion_id = ?', f.institucion_id);
+  if (f.institucion_texto) add("lower(trim(coalesce(i.nombre, r.institucion_texto, 'Sin institución'))) = lower(trim(?))", f.institucion_texto);
   if (f.municipio) add('i.municipio = ?', f.municipio);
   if (f.categoria) add('r.categoria = ?', f.categoria);
   if (f.articulo) add('r.articulo = ?', f.articulo);

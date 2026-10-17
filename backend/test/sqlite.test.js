@@ -106,6 +106,23 @@ test('migrates idempotently and supports application transactions on SQLite', as
   assert.equal(Number(sillas.registros), 2);
   assert.equal(Number(sillas.elementos), 75);
 
+  await request(app).post('/api/reintegros').set(auth).send({
+    institucion_id: null, institucion_texto: 'Institución Educativa El Diamante', fecha_reintegro: '2026-01-02',
+    placa: null, cantidad: 44, descripcion: '44 SILLAS UNIVERSITARIAS', referencia_soporte: null, valor: null, estado: 'realizado', observaciones: null
+  }).expect(201);
+  const institucionesInforme = await request(app).get('/api/informes/instituciones').set(auth).expect(200);
+  assert.ok(institucionesInforme.body.datos.some(x => x.nombre === 'Institución Educativa El Diamante' && x.id == null && Number(x.elementos) === 44));
+  const informeFiltrado = await request(app)
+    .get('/api/informes/resumen?institucion_texto=Instituci%C3%B3n%20Educativa%20El%20Diamante')
+    .set(auth).expect(200);
+  assert.equal(informeFiltrado.body.total_registros, 1);
+  const reintegrosFiltrados = await request(app)
+    .get('/api/reintegros?institucion_texto=Instituci%C3%B3n%20Educativa%20El%20Diamante')
+    .set(auth).expect(200);
+  assert.equal(reintegrosFiltrados.body.total, 1);
+  assert.equal(reintegrosFiltrados.body.datos[0].institucion_nombre, null);
+  assert.equal(reintegrosFiltrados.body.datos[0].institucion_texto, 'Institución Educativa El Diamante');
+
   const archivoEjemplo = path.join(__dirname, '..', '..', 'docs', 'ejemplos', 'acta_reintegro_EJEMPLO.xlsx');
   const previa = await request(app)
     .post('/api/importaciones')

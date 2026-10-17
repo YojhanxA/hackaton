@@ -29,7 +29,37 @@ export function SelectorInstitucion({ valor, alCambiar, id, permitirVacio = true
   );
 }
 
-export const FILTROS_VACIOS = { desde: '', hasta: '', estado: [], institucion_id: '', municipio: '', categoria: '', articulo: '', q: '' };
+function SelectorInstitucionConReintegros({ institucionId, institucionTexto, alCambiar }) {
+  const { datos } = useDatos('/informes/instituciones');
+  const lista = useMemo(() => (datos ? datos.datos : []), [datos]);
+  const listaId = useId();
+  const opcion = useMemo(() => {
+    if (!institucionId && !institucionTexto) return null;
+    return lista.find(i => institucionId
+      ? Number(i.id) === Number(institucionId)
+      : !i.id && i.nombre === institucionTexto);
+  }, [lista, institucionId, institucionTexto]);
+  const [texto, setTexto] = useState('');
+  const etiqueta = i => i.codigo ? `${i.nombre} (${i.codigo})` : i.nombre;
+  const normalizar = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  useEffect(() => { setTexto(opcion ? etiqueta(opcion) : ''); }, [opcion]);
+  const cambiar = t => {
+    setTexto(t);
+    const valor = normalizar(t);
+    const candidatas = lista.filter(i => normalizar(etiqueta(i)) === valor || normalizar(i.nombre) === valor);
+    const encontrado = candidatas.length === 1 ? candidatas[0] : null;
+    if (encontrado) alCambiar(encontrado.id ? { id: encontrado.id, texto: '' } : { id: '', texto: encontrado.nombre });
+    else alCambiar({ id: '', texto: '' });
+  };
+  return (
+    <>
+      <input list={listaId} value={texto} onChange={e => cambiar(e.target.value)} placeholder={datos ? 'Busca una institución con reintegros…' : 'Cargando instituciones…'} autoComplete="off" />
+      <datalist id={listaId}>{lista.map((i, n) => <option key={`${i.id || i.nombre}-${n}`} value={etiqueta(i)}>{i.municipio || `${i.registros} registros · ${i.elementos} elementos`}</option>)}</datalist>
+    </>
+  );
+}
+
+export const FILTROS_VACIOS = { desde: '', hasta: '', estado: [], institucion_id: '', institucion_texto: '', municipio: '', categoria: '', articulo: '', q: '' };
 
 /** Filtros de reintegros: los mismos en la consulta, las estadísticas y el Excel. */
 export function FiltrosReintegros({ valor, alCambiar, alLimpiar }) {
@@ -38,13 +68,14 @@ export function FiltrosReintegros({ valor, alCambiar, alLimpiar }) {
   useEffect(() => { const t = setTimeout(() => { if (q !== valor.q) alCambiar({ ...valor, q }); }, 350); return () => clearTimeout(t); }, [q]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setQ(valor.q); }, [valor.q]);
   const set = (k, v) => alCambiar({ ...valor, [k]: v });
+  const setInstitucion = i => alCambiar({ ...valor, institucion_id: i.id, institucion_texto: i.texto });
   const alternarEstado = e => set('estado', valor.estado.includes(e) ? valor.estado.filter(x => x !== e) : [...valor.estado, e]);
   const errorFechas = valor.desde && valor.hasta && valor.desde > valor.hasta;
   return (
     <section className="tarjeta filtros" aria-label="Filtros de reintegros">
       <label className="filtro"><span>Fecha inicial</span><input type="date" value={valor.desde} max={valor.hasta || undefined} onChange={e => set('desde', e.target.value)} /></label>
       <label className="filtro"><span>Fecha final</span><input type="date" value={valor.hasta} min={valor.desde || undefined} onChange={e => set('hasta', e.target.value)} /></label>
-      <div className="filtro ancho-2"><span id="et-inst">Institución</span><SelectorInstitucion aria-labelledby="et-inst" valor={valor.institucion_id} alCambiar={v => set('institucion_id', v)} /></div>
+      <div className="filtro ancho-2"><span id="et-inst">Institución</span><SelectorInstitucionConReintegros institucionId={valor.institucion_id} institucionTexto={valor.institucion_texto} alCambiar={setInstitucion} /></div>
       <label className="filtro"><span>Municipio</span><select value={valor.municipio} onChange={e => set('municipio', e.target.value)}><option value="">Todos</option>{(op?.municipios || []).map(m => <option key={m}>{m}</option>)}</select></label>
       <label className="filtro"><span>Categoría</span><select value={valor.categoria || ''} onChange={e => set('categoria', e.target.value)}><option value="">Todas</option><option value="mobiliario">Mobiliario</option><option value="electrico">Eléctrico</option></select></label>
       <label className="filtro ancho-2"><span>Buscar</span><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Código, placa, elemento o soporte" /></label>

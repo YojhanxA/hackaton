@@ -24,6 +24,7 @@ export default function Informes() {
   const consulta = qs(filtros);
   const { datos: r, cargando, error, recargar } = useDatos('/informes/resumen' + consulta, { activo: fechasOk });
   const { datos: det, cargando: cargDet } = useDatos('/reintegros' + qs({ ...filtros, pagina, por_pagina: 10, orden: 'fecha' }), { activo: fechasOk });
+  const { datos: institucionesInforme, cargando: cargInstituciones } = useDatos('/informes/instituciones' + consulta, { activo: fechasOk });
   const { datos: agr, cargando: cargAgr, error: errorAgr, recargar: recargarAgr } = useDatos(
     '/informes/articulos-institucion' + qs({ ...filtros, pagina: paginaAgrupada, por_pagina: 20 }),
     { activo: fechasOk && vistaAgrupada }
@@ -76,6 +77,20 @@ export default function Informes() {
                   detalle: `${num(x.elementos)} elementos · ${num(x.mobiliario)} mobiliario · ${num(x.electrico)} eléctrico${x.pendientes ? ` · ${num(x.pendientes)} pendientes` : ''}` }))} />
             </section>
           </div>
+
+          <section className="tarjeta">
+            <div className="tarjeta-h"><h2>Instituciones educativas con reintegros</h2><span className="m">Incluye instituciones asociadas y registros importados por nombre</span></div>
+            {cargInstituciones && !institucionesInforme ? <Cargando /> : institucionesInforme && (
+              institucionesInforme.datos.length
+                ? <Tabla claveFila={x => x.id ? `id:${x.id}` : `texto:${x.nombre}`} filas={institucionesInforme.datos} columnas={[
+                  { k: 'nombre', t: 'Institución', render: x => <button type="button" className="enlace-tabla" onClick={() => cambiar({ ...filtros, institucion_id: x.id || '', institucion_texto: x.id ? '' : x.nombre })}>{x.nombre}</button> },
+                  { k: 'codigo', t: 'Código', render: x => x.codigo || '—' },
+                  { k: 'registros', t: 'Reintegros', clase: 'num', render: x => num(x.registros) },
+                  { k: 'elementos', t: 'Elementos', clase: 'num', render: x => num(x.elementos) }
+                ]} />
+                : <p className="vacio">No hay reintegros que coincidan con los filtros actuales.</p>
+            )}
+          </section>
 
           <section className="tarjeta">
             <div className="tarjeta-h"><h2>Lo que más se reintegra</h2><span className="m">{num(r.articulos_distintos)} objetos distintos · toca uno para filtrar</span></div>

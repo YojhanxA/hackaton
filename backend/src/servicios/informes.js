@@ -102,6 +102,19 @@ async function articulosPorInstitucion(f, pagina = 1, porPagina = 20) {
   };
 }
 
+async function institucionesConReintegros(f = {}) {
+  const { where, params } = F.construir(f);
+  const { rows } = await consultar(`SELECT r.institucion_id AS id,
+      coalesce(i.nombre, r.institucion_texto, 'Sin institución') AS nombre,
+      i.codigo, i.municipio, count(*) AS registros, coalesce(sum(r.cantidad), 0) AS elementos
+    FROM reintegros r LEFT JOIN instituciones i ON i.id = r.institucion_id
+    LEFT JOIN usuarios u ON u.id = r.creado_por LEFT JOIN usuarios ua ON ua.id = r.actualizado_por${where}
+    GROUP BY r.institucion_id, i.nombre, i.codigo, i.municipio,
+      CASE WHEN r.institucion_id IS NULL THEN r.institucion_texto END
+    ORDER BY nombre`, params);
+  return rows.map(x => Object.assign(x, { registros: Number(x.registros), elementos: Number(x.elementos) }));
+}
+
 /* ---------- Excel ---------- */
 const fechaExcel = iso => (iso ? new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10))) : null);
 const horaBogota = ts => (ts ? new Date(new Date(ts).getTime() - 5 * 3600000) : null); // Excel no maneja zonas: se escribe la hora local
@@ -187,4 +200,4 @@ async function excel(f) {
   return { buffer: await wb.xlsx.writeBuffer(), filas: det.rows.length };
 }
 
-module.exports = { resumen, articulosPorInstitucion, excel, ETQ, CAT };
+module.exports = { resumen, articulosPorInstitucion, institucionesConReintegros, excel, ETQ, CAT };
