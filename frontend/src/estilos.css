@@ -227,7 +227,7 @@ code.hash { background: var(--superficie-2); padding: 1px 6px; border-radius: 4p
 .pr-fila { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .pr-acciones { display: flex; gap: 8px; }
 .pr-acciones .btn.pri { flex: 1; }
-.pr-filtros { display: grid; grid-template-columns: minmax(0, 1fr) 120px; gap: 8px; }
+.pr-filtros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .chips-sel { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 .chips-sel li { display: flex; align-items: center; gap: 8px; background: var(--superficie-2); border-radius: 8px; padding: 5px 6px 5px 6px; }
 .chip-nombre { flex: 1; min-width: 0; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -238,7 +238,9 @@ code.hash { background: var(--superficie-2); padding: 1px 6px; border-radius: 4p
 .lista-inst li:last-child label { border-bottom: 0; }
 .lista-inst label:hover { background: var(--superficie-2); }
 .lista-inst label.marcada { background: var(--acento-suave); }
+.lista-inst label > span { min-width: 0; }
 .lista-inst b { display: block; font-size: 13px; font-weight: 500; } .lista-inst small { display: block; color: var(--tenue); font-size: 11.5px; }
+.lista-inst small { overflow-wrap: anywhere; }
 .lista-inst input { margin-top: 2px; }
 .rutas { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
 .rutas > li { border: 1px solid var(--linea); border-radius: 10px; padding: 10px; display: grid; gap: 6px; }
