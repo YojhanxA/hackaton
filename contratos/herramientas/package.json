@@ -1,0 +1,10 @@
+{
+  "name": "traza-contrato-herramientas",
+  "private": true,
+  "description": "Compilar y probar TrazaAnclaje.sol en una EVM local",
+  "scripts": {
+    "compilar": "node compilar.js ../TrazaAnclaje.sol ../TrazaAnclaje.json",
+    "probar": "node prueba-contrato.js"
+  },
+  "devDependencies": { "solc": "0.8.24", "ethers": "6.13.4", "ganache": "7.9.2" }
+}

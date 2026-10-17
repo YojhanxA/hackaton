@@ -1,0 +1,42 @@
+# Despliegue en Render con un clic (Blueprint): un servicio web (API + frontend compilado) y PostgreSQL.
+# Render → New → Blueprint → elige este repositorio. Te pedirá ADMIN_CLAVE (mínimo 12 caracteres).
+# Después de desplegar el contrato en Polygon Amoy, pon su dirección en VITE_CONTRATO y vuelve a desplegar
+# (las variables VITE_ se incrustan en el frontend al compilar).
+services:
+  - type: web
+    name: traza-educativa
+    runtime: node
+    plan: free
+    buildCommand: cd frontend && npm ci --include=dev && npm run build && cd ../backend && npm ci --omit=dev
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/salud
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: traza-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      # El plan gratuito no tiene disco persistente: las imágenes se guardan en PostgreSQL (binario, no Base64)
+      - key: ALMACENAMIENTO
+        value: postgres
+      - key: ADMIN_USUARIO
+        value: admin
+      - key: ADMIN_CLAVE
+        sync: false
+      # Reintegros de DEMOSTRACIÓN (marcados DEMO-) para que la demo no arranque vacía.
+      # Se pueden borrar desde Configuración → Datos de demostración.
+      - key: SEMBRAR_DEMO
+        value: "si"
+      - key: VITE_CONTRATO
+        sync: false
+
+databases:
+  - name: traza-db
+    plan: free
+    databaseName: traza
+    user: traza

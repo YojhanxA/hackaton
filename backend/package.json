@@ -1,0 +1,37 @@
+{
+  "name": "traza-educativa-backend",
+  "version": "2.0.0",
+  "private": true,
+  "description": "API de Traza Educativa Medellín: instituciones, imágenes, reintegros, informes, rutas y bitácora certificada.",
+  "type": "commonjs",
+  "main": "src/servidor.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --watch src/servidor.js",
+    "start": "node src/servidor.js",
+    "migrar": "node src/db/migrar.js",
+    "crear-usuario": "node scripts/crear-usuario.js",
+    "seed:instituciones": "node scripts/seed-instituciones.js",
+    "seed:demo": "node scripts/seed-demo.js",
+    "test": "node --test --test-concurrency=1 test/*.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.22.3",
+    "express-rate-limit": "^7.4.1",
+    "better-sqlite3": "^12.2.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.4.0",
+    "pg": "^8.13.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "supertest": "^7.0.0"
+  }
+}

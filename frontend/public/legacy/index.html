@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Traza Educativa Medellín</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Mapa, indicadores, alertas e IA sobre las sedes educativas de Medellín, con cada cambio certificado en una cadena de trazabilidad.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="marca" href="#mapa" data-vista="mapa" aria-label="Traza Educativa Medellín, ir al mapa">
+      <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect x="2" y="9" width="14" height="14" rx="3.5" class="mk-a"/><rect x="16" y="9" width="14" height="14" rx="3.5" class="mk-b"/><path d="M19.5 16.2l2.4 2.4 4.6-4.8" class="mk-c"/></svg>
+      <span><b>Traza Educativa</b><small>Medellín · gestión y trazabilidad</small></span>
+    </a>
+    <nav class="nav" aria-label="Secciones">
+      <a href="#mapa" data-vista="mapa">Mapa</a>
+      <a href="#tablero" data-vista="tablero">Tablero</a>
+      <a href="#alertas" data-vista="alertas">Alertas <span id="navAlertas" class="badge"></span></a>
+      <a href="#asistente" data-vista="asistente">Asistente IA</a>
+      <a href="#cadena" data-vista="cadena">Trazabilidad</a>
+      <a href="#datos" data-vista="datos">Datos</a>
+    </nav>
+    <div class="top-r">
+      <label class="rol" for="rol"><span>Rol de la demo</span><select id="rol"></select></label>
+      <button id="chipInt" class="chip-int" type="button"></button>
+    </div>
+  </div>
+</header>
+<p class="aviso"><span><b>Demostración.</b> Datos oficiales: sedes, matrícula, límites, población 2025 e IPM 2025. Datos de ejemplo: conectividad, TIC, mobiliario, personal y reintegros. <span id="avisoBc">El anclaje diario automático es simulado.</span></span></p>
+
+<main>
+  <!-- ===================== MAPA ===================== -->
+  <section id="v-mapa" class="vista v-mapa" aria-label="Mapa territorial">
+    <div class="herr">
+      <label class="f"><span>Indicador</span><select id="mDim"></select></label>
+      <label class="f"><span>Comuna o corregimiento</span><select id="mCom"></select></label>
+      <label class="f f-bus"><span>Buscar sede</span><input id="mBus" list="mDl" type="search" placeholder="Nombre de la sede o institución" autocomplete="off"><datalist id="mDl"></datalist></label>
+      <div class="tog" role="group" aria-label="Capas">
+        <label><input type="checkbox" id="mNom" checked> Nombres</label>
+        <label><input type="checkbox" id="mPts" checked> Sedes</label>
+      </div>
+    </div>
+    <div class="mapa-grid">
+      <div class="mapa-caja">
+        <svg id="mapaSvg" role="img" aria-label="Mapa de Medellín por comunas con las sedes educativas"></svg>
+        <div class="zoom">
+          <button type="button" id="zIn" aria-label="Acercar">+</button>
+          <button type="button" id="zOut" aria-label="Alejar">−</button>
+          <button type="button" id="zFit" aria-label="Ver toda la ciudad" title="Ver toda la ciudad">⤢</button>
+        </div>
+        <div id="mRes" class="m-res" hidden></div>
+        <div id="mLey" class="ley"></div>
+      </div>
+      <aside id="ficha" class="ficha" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <!-- ===================== TABLERO ===================== -->
+  <section id="v-tablero" class="vista" aria-label="Tablero de indicadores" hidden>
+    <div class="v-head">
+      <div><p class="eyebrow">Tablero de indicadores</p><h1 id="tTitulo">Medellín</h1></div>
+      <div class="filtros">
+        <label class="f"><span>Comuna o corregimiento</span><select id="tCom"></select></label>
+        <button type="button" id="tLimpiar" class="btn sm" hidden>Quitar filtro</button>
+      </div>
+    </div>
+    <div id="tKpi" class="kpis"></div>
+    <div class="graf">
+      <figure class="card full">
+        <figcaption><h2>Sedes oficiales por estado</h2><p><span id="tFiltro">Toda la ciudad</span> · porcentaje a la derecha = sedes limitadas o críticas · datos de ejemplo</p>
+          <div class="ley-row"><span><i class="dot ok"></i>Adecuado</span><span><i class="dot lim"></i>Limitado</span><span><i class="dot crit"></i>Crítico</span></div></figcaption>
+        <div id="cEst" class="chart"></div>
+      </figure>
+      <figure class="card">
+        <figcaption><h2>Conectividad por comuna</h2><p>Sedes oficiales por estado de conexión. Toca una comuna para filtrar el tablero.</p></figcaption>
+        <div id="cCon" class="chart"></div>
+      </figure>
+      <figure class="card">
+        <figcaption><h2>Estudiantes por equipo de cómputo</h2><p>Sedes oficiales, por comuna. Menos es mejor.</p></figcaption>
+        <div id="cTic" class="chart"></div>
+      </figure>
+      <figure class="card">
+        <figcaption><h2>Elementos reintegrados por mes</h2><p>Enero de 2025 a septiembre de 2026</p>
+          <div class="ley-row"><span><i class="sw s1"></i>TIC</span><span><i class="sw s2"></i>Mobiliario</span></div></figcaption>
+        <div id="cMes" class="chart"></div>
+      </figure>
+      <figure class="card">
+        <figcaption><h2>Reintegros por tipo de elemento</h2><p>Últimos 12 meses, en unidades</p>
+          <div class="ley-row"><span><i class="sw s1"></i>TIC</span><span><i class="sw s2"></i>Mobiliario</span></div></figcaption>
+        <div id="cTipo" class="chart"></div>
+      </figure>
+      <figure class="card full">
+        <figcaption><h2>Pobreza y brecha de conectividad</h2><p>Cada círculo es una comuna o corregimiento; el tamaño es la matrícula en sedes oficiales.</p></figcaption>
+        <div id="cDis" class="chart"></div>
+        <p class="nota">En esta demostración la relación es artificial: los datos de ejemplo se generaron con más carencias donde el IPM es mayor. Con datos reales, esta gráfica muestra si la brecha digital sigue a la pobreza.</p>
+      </figure>
+    </div>
+    <section class="card">
+      <div class="res-h"><h2>Indicadores por comuna</h2><span class="m">Ordena con un clic en el encabezado · * dato de ejemplo</span></div>
+      <div id="tTabla" class="tabla"></div>
+    </section>
+  </section>
+
+  <!-- ===================== ALERTAS ===================== -->
+  <section id="v-alertas" class="vista" aria-label="Alertas automáticas" hidden>
+    <div class="v-head">
+      <div><p class="eyebrow">Alertas automáticas</p><h1>Qué necesita atención</h1></div>
+      <div class="filtros">
+        <div id="aSev" class="sevs" role="group" aria-label="Filtrar por severidad"></div>
+        <label class="f"><span>Dimensión</span><select id="aDim"></select></label>
+      </div>
+    </div>
+    <section class="card resumen">
+      <div class="res-h"><h2>Resumen ejecutivo</h2><button type="button" id="aIA" class="btn pri sm" hidden>Redactar con Claude</button></div>
+      <p id="aLocal" class="lead"></p>
+      <div id="aIAout" class="ia-out" hidden></div>
+    </section>
+    <div id="aLista" class="alertas"></div>
+  </section>
+
+  <!-- ===================== ASISTENTE ===================== -->
+  <section id="v-asistente" class="vista" aria-label="Asistente" hidden>
+    <div class="chat">
+      <div class="v-head">
+        <div><p class="eyebrow">Asistente</p><h1>Pregúntale a los datos</h1></div>
+        <div class="filtros"><span id="chatMotor" class="motor"></span><button type="button" id="chatLimpiar" class="btn sm">Nueva conversación</button></div>
+      </div>
+      <div id="chatLog" class="chat-log" aria-live="polite"></div>
+      <div id="chatSug" class="chips" aria-label="Preguntas sugeridas"></div>
+      <form id="chatForm" class="chat-f">
+        <label for="chatIn" class="sr">Tu pregunta</label>
+        <textarea id="chatIn" rows="2" placeholder="Ej.: ¿Qué sedes de Manrique tienen más pupitres en mal estado?"></textarea>
+        <div class="chat-b"><button type="button" id="chatStop" class="btn" hidden>Detener</button><button type="submit" id="chatSend" class="btn pri">Enviar</button></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===================== TRAZABILIDAD ===================== -->
+  <section id="v-cadena" class="vista" aria-label="Trazabilidad" hidden>
+    <div class="v-head">
+      <div><p class="eyebrow">Trazabilidad</p><h1>Registro certificado de cambios</h1></div>
+      <button type="button" id="cAud" class="btn pri">Auditar ahora</button>
+    </div>
+    <div id="cEstado" class="card estado"></div>
+
+    <ol class="flujo" aria-label="Cómo se certifica un cambio">
+      <li><b>Evento</b><span>Un rector propone un cambio o el almacén importa un archivo de reintegros.</span></li>
+      <li><b>Bloque</b><span>Se guarda con fecha, actor y datos, y con una huella SHA-256 que incluye la huella del bloque anterior.</span></li>
+      <li><b>Raíz del día</b><span>Al cierre del día, las huellas se combinan en un árbol de Merkle con una sola raíz.</span></li>
+      <li><b>Anclaje en blockchain</b><span>La huella del historial se publica en un contrato inteligente de Polygon Amoy. Una vez en la red, nadie la puede cambiar.</span></li>
+    </ol>
+
+    <section id="bcCard" class="card bc" aria-live="polite"></section>
+
+    <div class="c-grid">
+      <section class="card" id="vCard">
+        <h2>Verificar un registro</h2>
+        <p class="m">Cualquier entidad puede comprobar cuándo se creó un registro, quién lo hizo y si fue alterado.</p>
+        <form id="vForm" class="v-form">
+          <label for="vQ" class="sr">Registro a verificar</label>
+          <input id="vQ" type="search" placeholder="#120, huella, R00010, SEM-123456 o S205" autocomplete="off">
+          <button type="submit" class="btn pri">Verificar</button>
+        </form>
+        <div id="vOut"></div>
+      </section>
+      <section class="card">
+        <h2>Pruebas de manipulación</h2>
+        <p class="m">Simula un ataque a los datos y comprueba que la auditoría lo detecta. Puedes restaurar los datos originales en cualquier momento.</p>
+        <div class="f"><label for="cAlt">Tipo de manipulación</label>
+          <select id="cAlt">
+            <option value="bloque">Editar un bloque antiguo sin recalcular su huella</option>
+            <option value="recalculo">Editar un bloque y recalcular toda la cadena</option>
+            <option value="bd_sede">Cambiar un dato directamente en la base de datos</option>
+            <option value="bd_rein">Borrar un reintegro directamente en la base de datos</option>
+          </select>
+        </div>
+        <div class="acc"><button type="button" id="cAltBtn" class="btn">Simular manipulación</button><button type="button" id="cRest" class="btn" hidden>Restaurar datos originales</button></div>
+        <div id="cAltMsg"></div>
+      </section>
+    </div>
+
+    <section id="cRes" class="card" hidden></section>
+
+    <section class="card">
+      <div class="res-h"><h2>Bloques</h2>
+        <div class="filtros"><label for="cAcc" class="sr">Acción</label><select id="cAcc"></select><label for="cBus" class="sr">Buscar bloques</label><input id="cBus" type="search" placeholder="Sede, código o huella" autocomplete="off"></div></div>
+      <div id="cTabla" class="tabla"></div>
+      <div id="cPag" class="pag"></div>
+    </section>
+
+    <section class="card">
+      <h2>Raíces diarias <span class="tag ej">Anclaje simulado</span></h2>
+      <p class="m">Cada día se calcula una raíz Merkle de sus bloques. En producción un proceso nocturno las publica en el contrato; en la demo este anclaje diario es simulado y el anclaje real se hace con el botón de la tarjeta “Anclaje en blockchain”.</p>
+      <div id="cAnc" class="tabla"></div>
+    </section>
+  </section>
+
+  <!-- ===================== DATOS ===================== -->
+  <section id="v-datos" class="vista prosa" aria-label="Acerca de los datos" hidden>
+    <div class="v-head"><div><p class="eyebrow">Acerca de los datos</p><h1>Qué es real, qué es ejemplo y cómo se pasa a producción</h1></div></div>
+    <div class="d-grid">
+      <section class="card">
+        <h2>Datos oficiales</h2>
+        <ul class="fuentes">
+          <li><b>Sedes educativas y matrícula de 0° a 11°</b><span>GeoMedellín, capa Sedes Educativas, vigencia 2024. 779 sedes, 423 de ellas oficiales.</span><a href="https://www.medellin.gov.co/servidormapas/rest/services/educacion/VC_Sedes_Instituciones/MapServer/0" target="_blank" rel="noopener">Ver servicio</a></li>
+          <li><b>Límites de comunas, corregimientos, barrios y veredas</b><span>GeoMedellín, límite político-administrativo.</span><a href="https://www.medellin.gov.co/servidormapas/rest/services/mapas_nacionales/VC_Limite_Politico_Admtivo/MapServer" target="_blank" rel="noopener">Ver servicio</a></li>
+          <li><b>Población 2025</b><span>DAP–DANE, proyecciones de población por comuna y por barrio.</span></li>
+          <li><b>Índice de Pobreza Multidimensional 2025</b><span>Alcaldía de Medellín, Indicadores estratégicos (abril de 2026), % de personas por comuna y corregimiento.</span></li>
+        </ul>
+      </section>
+      <section class="card">
+        <h2>Datos de ejemplo</h2>
+        <p>Conectividad, infraestructura TIC, mobiliario, personal y reintegros se generan con una semilla fija (mismos datos en cada carga) solo para las sedes oficiales. Tienen sesgos deliberados para que la demo muestre análisis útiles: más carencias donde el IPM es mayor y en zona rural, tres picos de reintegros y tres sedes con un error de captura.</p>
+        <p>Se reemplazan por las fuentes reales sin tocar la interfaz: inventarios de la Secretaría, mediciones de los operadores de conectividad, la planta de personal agregada por sede y la aplicación de reintegros.</p>
+      </section>
+      <section class="card">
+        <h2>Privacidad</h2>
+        <p>Los datos personales (Ley 1581 de 2012) nunca van a la cadena ni a una página pública. La plataforma publica cifras agregadas por sede, y la cadena guarda solo huellas y metadatos de cada cambio. Quién aprobó se registra con un código de funcionario, no con su nombre.</p>
+      </section>
+      <section class="card">
+        <h2>Cómo funciona la trazabilidad</h2>
+        <ul class="lst-p">
+          <li>Cada bloque guarda la huella SHA-256 de su contenido en JSON canónico y la del bloque anterior. Cambiar un bloque rompe todos los siguientes.</li>
+          <li>La huella de todo el historial (raíz Merkle de las huellas recalculadas) se publica en el contrato inteligente <code>TrazaAnclaje</code> en Polygon Amoy. El contrato no permite modificar ni borrar un anclaje, y solo las cuentas autorizadas pueden anclar.</li>
+          <li>Cualquiera puede verificar: la página lee los anclajes de la red y los compara con el historial recalculado. Si alguien reescribe la base de datos y recalcula toda la cadena, la huella ya no coincide con la de la red.</li>
+          <li>Cada archivo de reintegros importado guarda la raíz Merkle de sus filas: cualquier fila se puede verificar sola, con una prueba de pocos pasos.</li>
+          <li>La auditoría reconstruye el estado a partir de la cadena y lo compara con la base de datos para detectar cambios hechos por fuera del flujo de aprobación.</li>
+        </ul>
+      </section>
+      <section class="card">
+        <h2>Integración con la aplicación de reintegros</h2>
+        <ul class="lst-p">
+          <li>Cada <code>ArchivoImportado</code> genera un bloque <code>IMPORTACION_REINTEGROS</code> con la raíz Merkle de sus filas <code>Reintegro</code>.</li>
+          <li>El backend en FastAPI añade un servicio de registro (tabla <code>bloques</code> de solo inserción) y un endpoint público <code>/verificar/{huella}</code>.</li>
+          <li>Las propuestas y aprobaciones se vuelven endpoints con el rol del usuario autenticado (JWT): rector, profesional SEM y auditor.</li>
+          <li>Un proceso diario calcula la raíz del día y la sella con OpenTimestamps; el recibo se guarda junto al anclaje.</li>
+        </ul>
+      </section>
+      <section class="card">
+        <h2>Supuestos de la demo</h2>
+        <ul class="lst-p">
+          <li>Umbrales: conectividad crítica sin servicio, con menos de 20 Mbps medidos o menos de 94 % de disponibilidad; TIC adecuada hasta 12 estudiantes por equipo; mobiliario crítico con más de 30 % en mal estado; personal crítico con 3 vacantes o más de 36 estudiantes por docente.</li>
+          <li>Las sedes no oficiales solo muestran matrícula: la Secretaría no administra su infraestructura.</li>
+          <li>Los cambios que hagas en la demo viven en tu navegador y se pierden al recargar la página.</li>
+        </ul>
+      </section>
+    </div>
+  </section>
+</main>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="js/datos-reales.js"></script>
+<script src="js/nucleo.js"></script>
+<script src="js/ejemplo.js"></script>
+<script src="js/cadena.js"></script>
+<script src="js/mapa.js"></script>
+<script src="js/tablero.js"></script>
+<script src="js/alertas.js"></script>
+<script src="js/asistente.js"></script>
+<script src="js/config-blockchain.js"></script>
+<script src="js/contrato-artefacto.js"></script>
+<script src="js/blockchain.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

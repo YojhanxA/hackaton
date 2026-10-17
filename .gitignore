@@ -1,0 +1,8 @@
+node_modules/
+.env
+.env.local
+backend/subidas/
+backend/data/
+frontend/dist/
+*.log
+.DS_Store
