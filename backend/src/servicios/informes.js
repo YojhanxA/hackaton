@@ -106,11 +106,12 @@ async function institucionesConReintegros(f = {}) {
   const { where, params } = F.construir(f);
   const { rows } = await consultar(`SELECT r.institucion_id AS id,
       coalesce(i.nombre, r.institucion_texto, 'Sin institución') AS nombre,
-      i.codigo, i.municipio, count(*) AS registros, coalesce(sum(r.cantidad), 0) AS elementos
+      max(i.codigo) AS codigo, max(i.municipio) AS municipio,
+      count(*) AS registros, coalesce(sum(r.cantidad), 0) AS elementos
     FROM reintegros r LEFT JOIN instituciones i ON i.id = r.institucion_id
-  ${where}
-    GROUP BY 1, 2, 3, 4
-    ORDER BY nombre`, params);
+    ${where}
+    GROUP BY r.institucion_id, coalesce(i.nombre, r.institucion_texto, 'Sin institución')
+    ORDER BY 2`, params);
   return rows.map(x => Object.assign(x, { registros: Number(x.registros), elementos: Number(x.elementos) }));
 }
 
