@@ -49,7 +49,7 @@ export default function Informes() {
         <button type="button" className="btn" onClick={pdf} disabled={generandoPdf || !r || !r.total_registros}>{generandoPdf ? 'Generando PDF…' : 'Reporte en PDF'}</button>
         <button type="button" className="btn pri" onClick={exportar} disabled={exportando || !r || !r.total_registros}>{exportando ? 'Generando Excel…' : 'Exportar a Excel'}</button>
       </Encabezado>
-      <FiltrosReintegros valor={filtros} alCambiar={cambiar} alLimpiar={() => cambiar(FILTROS_VACIOS)} />
+      <FiltrosReintegros valor={filtros} alCambiar={cambiar} alLimpiar={() => cambiar(FILTROS_VACIOS)} usarDesplegableReintegros />
       <MensajeError error={error} alReintentar={recargar} />
       {cargando && !r ? <Cargando /> : r && (
         <div className={cargando ? 'atenuado' : ''}>

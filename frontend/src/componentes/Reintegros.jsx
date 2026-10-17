@@ -59,10 +59,36 @@ function SelectorInstitucionConReintegros({ institucionId, institucionTexto, alC
   );
 }
 
+function DesplegableInstitucionesConReintegros({ institucionId, institucionTexto, alCambiar }) {
+  const { datos, cargando, error } = useDatos('/informes/instituciones');
+  const lista = useMemo(() => (datos ? datos.datos : []), [datos]);
+  const valorActual = institucionId
+    ? `id:${institucionId}`
+    : institucionTexto ? `texto:${institucionTexto}` : '';
+  const cambiar = valor => {
+    if (valor.startsWith('id:')) alCambiar({ id: valor.slice(3), texto: '' });
+    else if (valor.startsWith('texto:')) alCambiar({ id: '', texto: valor.slice(6) });
+    else alCambiar({ id: '', texto: '' });
+  };
+  return (
+    <>
+      <select value={valorActual} onChange={e => cambiar(e.target.value)} disabled={cargando || !!error}>
+        <option value="">{cargando ? 'Cargando instituciones…' : error ? 'No se pudieron cargar' : 'Todas las instituciones'}</option>
+        {lista.map((i, n) => {
+          const value = i.id ? `id:${i.id}` : `texto:${i.nombre}`;
+          const detalle = `${Number(i.registros).toLocaleString('es-CO')} reintegros · ${Number(i.elementos).toLocaleString('es-CO')} elementos`;
+          return <option key={`${value}:${n}`} value={value}>{i.nombre}{i.codigo ? ` (${i.codigo})` : ''} · {detalle}</option>;
+        })}
+      </select>
+      {error && <small className="err" role="alert">Error al cargar las instituciones con reintegros.</small>}
+    </>
+  );
+}
+
 export const FILTROS_VACIOS = { desde: '', hasta: '', estado: [], institucion_id: '', institucion_texto: '', municipio: '', categoria: '', articulo: '', q: '' };
 
 /** Filtros de reintegros: los mismos en la consulta, las estadísticas y el Excel. */
-export function FiltrosReintegros({ valor, alCambiar, alLimpiar }) {
+export function FiltrosReintegros({ valor, alCambiar, alLimpiar, usarDesplegableReintegros = false }) {
   const { datos: op } = useDatos('/instituciones/filtros');
   const [q, setQ] = useState(valor.q);
   useEffect(() => { const t = setTimeout(() => { if (q !== valor.q) alCambiar({ ...valor, q }); }, 350); return () => clearTimeout(t); }, [q]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -75,7 +101,9 @@ export function FiltrosReintegros({ valor, alCambiar, alLimpiar }) {
     <section className="tarjeta filtros" aria-label="Filtros de reintegros">
       <label className="filtro"><span>Fecha inicial</span><input type="date" value={valor.desde} max={valor.hasta || undefined} onChange={e => set('desde', e.target.value)} /></label>
       <label className="filtro"><span>Fecha final</span><input type="date" value={valor.hasta} min={valor.desde || undefined} onChange={e => set('hasta', e.target.value)} /></label>
-      <div className="filtro ancho-2"><span id="et-inst">Institución</span><SelectorInstitucionConReintegros institucionId={valor.institucion_id} institucionTexto={valor.institucion_texto} alCambiar={setInstitucion} /></div>
+      <div className="filtro ancho-2"><span id="et-inst">Institución</span>{usarDesplegableReintegros
+        ? <DesplegableInstitucionesConReintegros institucionId={valor.institucion_id} institucionTexto={valor.institucion_texto} alCambiar={setInstitucion} />
+        : <SelectorInstitucionConReintegros institucionId={valor.institucion_id} institucionTexto={valor.institucion_texto} alCambiar={setInstitucion} />}</div>
       <label className="filtro"><span>Municipio</span><select value={valor.municipio} onChange={e => set('municipio', e.target.value)}><option value="">Todos</option>{(op?.municipios || []).map(m => <option key={m}>{m}</option>)}</select></label>
       <label className="filtro"><span>Categoría</span><select value={valor.categoria || ''} onChange={e => set('categoria', e.target.value)}><option value="">Todas</option><option value="mobiliario">Mobiliario</option><option value="electrico">Eléctrico</option></select></label>
       <label className="filtro ancho-2"><span>Buscar</span><input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Código, placa, elemento o soporte" /></label>
