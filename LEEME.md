@@ -156,10 +156,10 @@ El hook `VITE_E2E=1` solo expone el mapa para esas pruebas. No se activa en un b
 2. En **Trazabilidad**, un editor ancla la raíz Merkle de todo el historial en el contrato `TrazaAnclaje` usando MetaMask. El recibo (red, contrato, hash de la transacción) se guarda en `anclajes`.
 3. La verificación revisa dos cosas: que la raíz guardada siga coincidiendo con la bitácora recalculada (si no, la base fue alterada) y que la raíz exista en la red.
 
-**Desplegar el contrato en Polygon Amoy (red de prueba):**
-1. En MetaMask usa una cuenta solo para pruebas y pide POL de prueba en un faucet de Amoy.
+**Desplegar el contrato en Monad Testnet:**
+1. En MetaMask selecciona `Monad Testnet` (chain ID `10143`, RPC `https://testnet-rpc.monad.xyz`, moneda `MON`) y usa una cuenta solo para pruebas. Los MON de prueba sirven para pagar el gas del despliegue y las transacciones; nunca uses una frase semilla ni una clave privada en el proyecto.
 2. En https://remix.ethereum.org pega `contratos/TrazaAnclaje.sol` y compila con 0.8.24 y optimización activada (200). Si al desplegar sale un error de opcode, elige EVM `paris`. Despliega con “Injected Provider – MetaMask”. También puedes desplegarlo con el botón “Desplegar contrato” de Trazabilidad, siendo administrador.
-3. Pon la dirección en `VITE_CONTRATO` del frontend y vuelve a construirlo.
+3. Al abrir Trazabilidad, conecta MetaMask y despliega el contrato; confirma el gasto de gas en la billetera. El despliegue guarda la dirección en el navegador actual. Para compartir el contrato con otros usuarios, configura su dirección como `VITE_CONTRATO` en Vercel y vuelve a desplegar el frontend.
 
 ## 8. Despliegue sugerido
 

@@ -15,12 +15,12 @@ export const MAX_RUTAS = COLORES_RUTA.length;
 
 /** Red y contrato para anclar la bitácora (contratos/TrazaAnclaje.sol). */
 export const BLOCKCHAIN = {
-  nombre: env.VITE_CHAIN_NOMBRE || 'Polygon Amoy',
+  nombre: env.VITE_CHAIN_NOMBRE || 'Monad Testnet',
   tipo: 'red de prueba',
-  chainId: Number(env.VITE_CHAIN_ID || 80002),
-  rpc: env.VITE_CHAIN_RPC || 'https://rpc-amoy.polygon.technology',
-  explorador: env.VITE_CHAIN_EXPLORADOR || 'https://amoy.polygonscan.com',
-  moneda: { name: env.VITE_CHAIN_MONEDA || 'POL', symbol: env.VITE_CHAIN_MONEDA || 'POL', decimals: 18 },
+  chainId: Number(env.VITE_CHAIN_ID || 10143),
+  rpc: env.VITE_CHAIN_RPC || 'https://testnet-rpc.monad.xyz',
+  explorador: env.VITE_CHAIN_EXPLORADOR || 'https://testnet.monadscan.com',
+  moneda: { name: env.VITE_CHAIN_MONEDA || 'MON', symbol: env.VITE_CHAIN_MONEDA || 'MON', decimals: 18 },
   contrato: env.VITE_CONTRATO || ''
 };
 
