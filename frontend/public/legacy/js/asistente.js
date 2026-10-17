@@ -121,7 +121,61 @@
   /* ---------- Herramientas para Claude ---------- */
   let resalte = null;
   const DIMK = { conectividad: 'con', tic: 'tic', mobiliario: 'mob', personal: 'per', reintegros: 'rei', matricula: 'mat' };
+  const API_BASE = (new URLSearchParams(window.location.search).get('api') || window.location.origin).replace(/\/$/, '');
+  let institucionesCache = null;
+  async function apiDatos(ruta) {
+    let sesion;
+    try { sesion = JSON.parse(sessionStorage.getItem('traza.sesion') || 'null'); } catch { sesion = null; }
+    if (!sesion || !sesion.token) throw new Error('Inicia sesión en Traza Educativa para consultar los datos actuales.');
+    let response;
+    try {
+      response = await fetch(API_BASE + '/api' + ruta, { headers: { Authorization: 'Bearer ' + sesion.token } });
+    } catch {
+      throw new Error('No pude conectar con el backend. Verifica la conexión y vuelve a intentar.');
+    }
+    const body = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(body && body.error ? body.error : `El backend respondió ${response.status}.`);
+    return body;
+  }
+  const PARADA = new Set(['la', 'las', 'el', 'los', 'de', 'del', 'y', 'en', 'institucion', 'educativa', 'educativo', 'ie', 'colegio', 'sede', 'reintegro', 'reintegros', 'tiene', 'tienen', 'hay', 'cuanto', 'cuantos', 'cuantas', 'dime', 'muestra', 'consulta', 'para', 'sobre', 'cuales', 'que', 'por', 'favor', 'bienes', 'elementos']);
+  const palabras = t => norm(t).replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/).filter(x => x.length > 1 && !PARADA.has(x));
+  async function reintegrosDeInstitucion(nombre) {
+    const data = institucionesCache || await apiDatos('/instituciones/opciones');
+    institucionesCache = data;
+    const q = norm(nombre), tokens = new Set(palabras(nombre));
+    const candidatas = data.datos.map(inst => {
+      const nombreNorm = norm(inst.nombre), codigo = norm(inst.codigo);
+      const exacta = q.includes(nombreNorm) || (codigo && new RegExp(`(^|[^a-z0-9])${codigo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^a-z0-9])`).test(q));
+      const instTokens = palabras(inst.nombre);
+      const coincidencias = instTokens.filter(t => tokens.has(t)).length;
+      return { inst, exacta, puntaje: instTokens.length ? coincidencias / instTokens.length : 0, coincidencias };
+    }).filter(x => x.exacta || (x.coincidencias > 0 && x.puntaje >= 0.6))
+      .sort((a, b) => Number(b.exacta) - Number(a.exacta) || b.puntaje - a.puntaje || b.coincidencias - a.coincidencias);
+    if (!candidatas.length) throw new Error(`No identifiqué la institución en “${nombre}”. Incluye su nombre completo o código.`);
+    if (!candidatas[0].exacta && candidatas[1] &&
+        candidatas[0].puntaje === candidatas[1].puntaje && candidatas[0].coincidencias === candidatas[1].coincidencias) {
+      throw new Error(`Encontré varias instituciones posibles: ${candidatas.slice(0, 4).map(x => x.inst.nombre).join('; ')}. Especifica el nombre completo o código.`);
+    }
+    const inst = candidatas[0].inst;
+    const detalle = await apiDatos('/instituciones/' + encodeURIComponent(inst.id));
+    return { institucion: detalle.nombre, codigo: detalle.codigo, municipio: detalle.municipio, reintegros: detalle.reintegros };
+  }
+  async function respuestaReintegrosInstitucion(nombre) {
+    const r = await reintegrosDeInstitucion(nombre), tot = r.reintegros;
+    const estado = `${TE.fmt(Number(tot.n))} registros y ${TE.fmt(Number(tot.elementos))} elementos`;
+    if (!Number(tot.n)) return `**${r.institucion} (${r.codigo})** no tiene reintegros vigentes asociados en la base de datos.\n- Los registros anulados no se incluyen en este resumen.`;
+    const porEstado = [
+      ['Realizados', tot.realizados], ['Pendientes', tot.pendientes], ['Rechazados', tot.rechazados]
+    ].filter(([, n]) => Number(n) > 0).map(([etq, n]) => `${etq.toLowerCase()}: ${TE.fmt(Number(n))}`).join(' · ');
+    const objetos = tot.por_articulo.map(x => `- **${x.articulo}**: ${TE.fmt(Number(x.elementos))} elementos en ${TE.fmt(Number(x.registros))} ${Number(x.registros) === 1 ? 'registro' : 'registros'} (${x.categoria === 'mobiliario' ? 'mobiliario' : 'eléctrico'})`);
+    return `**${r.institucion} (${r.codigo})**, ${r.municipio}: ${estado}.\n- Estado: ${porEstado || 'sin detalle por estado'}.\n- Cantidades por familia:\n${objetos.join('\n')}\n- Último reintegro: ${tot.ultimo ? TE.fecha(tot.ultimo) : 'sin fecha'}.\n\nDatos actuales consultados en Traza Educativa. Los anulados no se incluyen.`;
+  }
+  const esConsultaReintegrosInstitucion = q => !/\batipic|alerta|historial|integridad|comuna|corregimiento/.test(TE.norm(q)) &&
+    /\breintegr|ri-\d|inventario|bienes?\b|sillas?\b|pupitres?\b|mobiliario\b/.test(TE.norm(q));
   const HERR = [
+    { name: 'consultar_reintegros_institucion', description: 'Consulta los datos actuales del backend de Traza Educativa para una institución: total de reintegros y elementos, estados, última fecha, y cantidades agrupadas por familia. No inventes datos; usa esta herramienta para preguntas de reintegros o artículos de una institución.',
+      inputSchema: { type: 'object', properties: { institucion: { type: 'string', description: 'Nombre o código de la institución educativa' } }, required: ['institucion'] },
+      execute: i => reintegrosDeInstitucion(String(i.institucion || '')) },
     { name: 'buscar_sedes', description: 'Lista sedes educativas con sus indicadores. Filtra por comuna, por texto del nombre y por estado en una dimensión; ordena de peor a mejor (o al revés). Devuelve el total y hasta 12 sedes con conectividad, TIC, mobiliario, personal y reintegros.',
       inputSchema: { type: 'object', properties: {
         comuna: { type: 'string', description: 'Código (01-16, 50, 60, 70, 80, 90) o nombre de la comuna o corregimiento' },
@@ -158,11 +212,12 @@
         return { resaltadas: set.size };
       } }
   ];
-  const NOMBRE_HERR = { buscar_sedes: 'Buscando sedes', resumen_territorial: 'Calculando indicadores', historial_sede: 'Leyendo el historial certificado', verificar_integridad: 'Auditando la cadena', listar_alertas: 'Revisando alertas', mostrar_en_mapa: 'Resaltando en el mapa' };
+  const NOMBRE_HERR = { consultar_reintegros_institucion: 'Consultando reintegros actuales', buscar_sedes: 'Buscando sedes', resumen_territorial: 'Calculando indicadores', historial_sede: 'Leyendo el historial certificado', verificar_integridad: 'Auditando la cadena', listar_alertas: 'Revisando alertas', mostrar_en_mapa: 'Resaltando en el mapa' };
 
   const reglas = () => `Eres el asistente de “Traza Educativa Medellín”, una plataforma de demostración para la Secretaría de Educación de Medellín. Respondes en español, de forma clara y breve (máximo 160 palabras salvo que pidan detalle), con cifras concretas.
-- Oficiales: sedes educativas, matrícula de 0° a 11°, límites, población 2025 e IPM 2025. De ejemplo (inventados para la demo): conectividad, TIC, mobiliario, personal y reintegros. Cuando uses datos de ejemplo, dilo una vez.
+- Oficiales: sedes educativas, matrícula de 0° a 11°, límites, población 2025 e IPM 2025. Los reintegros por institución se consultan en tiempo real en Traza Educativa; no los sustituyas por datos de ejemplo. Conectividad, TIC, mobiliario territorial y personal del análisis son datos de demostración.
 - ${conHerr ? 'Usa las herramientas para obtener cualquier cifra. Nunca inventes datos, sedes ni códigos.' : 'Usa solo los datos incluidos en este mensaje. Nunca inventes datos, sedes ni códigos.'}
+- ${conHerr ? 'Para preguntar por reintegros o cantidades de una institución, usa consultar_reintegros_institucion.' : ''}
 ${conHerr ? '- Cuando hables de sedes concretas, llama mostrar_en_mapa con sus códigos.\n' : ''}- Personal: solo hay cifras agregadas. No tienes ni pidas datos personales de docentes o estudiantes (Ley 1581 de 2012).
 - La trazabilidad usa una cadena de bloques SHA-256 real con raíces Merkle. La huella del historial se ancla con un contrato inteligente en ${(window.TRAZA_RED || {}).nombre || 'una red de prueba'} (red de prueba) desde la vista Trazabilidad; las raíces diarias automáticas son simuladas.
 - Formato: párrafos cortos y viñetas que empiecen con "- ". Sin tablas ni títulos.
@@ -226,9 +281,9 @@ Rol del usuario en la demo: ${TE.ROLES[E.rol].t}. Corte de los datos: ${TE.fecha
     const d = document.createElement('div'); d.className = 'msg ' + rol;
     d.innerHTML = `<div class="cuerpo">${html}</div>`; log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
   }
-  function pie(b, motor, res) {
+  function pie(b, motor, res, etiqueta) {
     const p = document.createElement('div'); p.className = 'pie';
-    p.innerHTML = `<span class="motor-tag ${motor === 'claude' ? 'ia' : ''}">${motor === 'claude' ? 'Claude' : 'Motor local'}</span>`;
+    p.innerHTML = `<span class="motor-tag ${motor === 'claude' ? 'ia' : ''}">${TE.esc(etiqueta || (motor === 'claude' ? 'Claude' : 'Motor local'))}</span>`;
     if (res && res.set && res.set.size) {
       const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn sm'; btn.textContent = `Ver ${TE.plural(res.set.size, 'sede', 'sedes')} en el mapa`;
       btn.onclick = () => { TE.irVista('mapa'); TE.mapa.resaltar(res.set, res.titulo); };
@@ -236,12 +291,21 @@ Rol del usuario en la demo: ${TE.ROLES[E.rol].t}. Corte de los datos: ${TE.fecha
     }
     b.appendChild(p);
   }
-  function responderLocal(q, nota) {
-    const r = local(q);
+  async function responderLocal(q, nota) {
+    let r, etiqueta = 'Motor local';
+    if (esConsultaReintegrosInstitucion(q)) {
+      try {
+        const textoInstitucion = q.replace(/^(?:hola[, ]*)?(?:por favor[, ]*)?/i, '');
+        r = { texto: await respuestaReintegrosInstitucion(textoInstitucion) };
+        etiqueta = 'Datos actuales del proyecto';
+      } catch (e) {
+        r = { texto: e.message };
+      }
+    } else r = local(q);
     const b = burbuja('bot', (nota ? `<p class="nota-motor">${TE.esc(nota)}</p>` : '') + TE.mdLite(r.texto));
     const res = r.sedes && r.sedes.size ? { set: r.sedes, titulo: r.titulo || 'Sedes señaladas por el asistente' } : null;
     if (res) TE.mapa.resaltar(res.set, res.titulo);
-    pie(b, 'local', res);
+    pie(b, 'local', res, etiqueta);
   }
   function mensajeError(e) {
     const c = e && e.code;
@@ -253,13 +317,20 @@ Rol del usuario en la demo: ${TE.ROLES[E.rol].t}. Corte de los datos: ${TE.fecha
   const PERMANENTE = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'];
 
   async function responderClaude(q) {
+    let contextoReintegros = '';
+    if (esConsultaReintegrosInstitucion(q)) {
+      try { contextoReintegros = await respuestaReintegrosInstitucion(q); }
+      catch (e) { await responderLocal(q, e.message); return; }
+    }
     const b = burbuja('bot', '<p class="pensando">Pensando…</p>');
     const cuerpo = b.querySelector('.cuerpo'), pasos = document.createElement('ul'); pasos.className = 'pasos';
     resalte = null; ctl = new AbortController();
     const herr = conHerr ? HERR.slice(0, maxHerr || HERR.length).map(h => Object.assign({}, h, {
       execute: (i, cx) => { const li = document.createElement('li'); li.textContent = NOMBRE_HERR[h.name] + '…'; pasos.appendChild(li); if (!pasos.isConnected) b.insertBefore(pasos, cuerpo); return h.execute(i || {}, cx); }
     })) : null;
-    const contexto = conHerr ? '' : `\n\nDatos disponibles (JSON):\nResumen: ${JSON.stringify(resumenTerritorial(comunaEn(q)))}\nAlertas: ${JSON.stringify(alertasCompactas())}`;
+    const contexto = contextoReintegros
+      ? `\n\nConsulta real del backend para esta pregunta. Basa la respuesta en estos datos y no uses cifras territoriales de demostración:\n${contextoReintegros}`
+      : conHerr ? '' : `\n\nDatos disponibles (JSON):\nResumen: ${JSON.stringify(resumenTerritorial(comunaEn(q)))}\nAlertas: ${JSON.stringify(alertasCompactas())}`;
     turnos.push({ role: 'user', content: q });
     while (turnos.length > 12) turnos.shift();
     const entrada = [{ role: 'user', content: reglas() + contexto }, ...turnos];
@@ -276,7 +347,7 @@ Rol del usuario en la demo: ${TE.ROLES[E.rol].t}. Corte de los datos: ${TE.fecha
       if (e && e.code === 'tools_unavailable') { conHerr = false; pintarMotor(); }
       if (e && PERMANENTE.includes(e.code)) desactivar();
       b.remove();
-      responderLocal(q, mensajeError(e) + ' Respondo con el motor local.');
+      await responderLocal(q, mensajeError(e) + ' Respondo con el motor local.');
     } finally { ctl = null; }
   }
 
@@ -284,7 +355,7 @@ Rol del usuario en la demo: ${TE.ROLES[E.rol].t}. Corte de los datos: ${TE.fecha
     q = q.trim(); if (!q || ocupado) return;
     ocupado = true; inp.value = ''; sendBtn.disabled = true; stopBtn.hidden = !sample;
     burbuja('user', `<p>${TE.esc(q)}</p>`);
-    try { if (sample) await responderClaude(q); else responderLocal(q); }
+    try { if (sample) await responderClaude(q); else await responderLocal(q); }
     finally { ocupado = false; sendBtn.disabled = false; stopBtn.hidden = true; inp.focus(); }
   }
   form.onsubmit = e => { e.preventDefault(); enviar(inp.value); };
@@ -299,11 +370,11 @@ Rol del usuario en la demo: ${TE.ROLES[E.rol].t}. Corte de los datos: ${TE.fecha
     motorEl.className = 'motor ' + (sample ? 'ia' : 'local');
     motorEl.innerHTML = comprobando ? '<i aria-hidden="true"></i>Comprobando si Claude está disponible…'
       : sample ? `<i aria-hidden="true"></i>Claude${conHerr ? ' · consulta los datos con herramientas' : ' · con un resumen de los datos'}`
-      : '<i aria-hidden="true"></i>Motor local de reglas · Claude no está disponible aquí';
+      : '<i aria-hidden="true"></i>Reglas locales + datos actuales de Traza Educativa · Claude no está disponible aquí';
   }
   function desactivar() { sample = null; pintarMotor(); TE.emit('ia', false); }
   function bienvenida() {
-    const b = burbuja('bot', TE.mdLite(`Hola. Consulto los datos de la plataforma: sedes, indicadores por comuna, alertas, reintegros e historial certificado.\n- Las sedes que mencione se resaltan en el mapa.\n- Conectividad, TIC, mobiliario, personal y reintegros son datos de ejemplo.\n- No manejo datos personales: solo cifras agregadas.`));
+    const b = burbuja('bot', TE.mdLite(`Hola. Consulto datos de Traza Educativa y puedo responder sobre instituciones, reintegros, indicadores territoriales y trazabilidad.\n- Los reintegros se consultan en la base actual de la plataforma.\n- Conectividad, TIC y personal del análisis territorial son datos de demostración.\n- No expongo datos personales.`));
     b.classList.add('intro');
   }
 

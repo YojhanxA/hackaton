@@ -97,6 +97,14 @@ test('migrates idempotently and supports application transactions on SQLite', as
   assert.equal(consolidado.body.datos[0].articulo, 'SILLA');
   assert.equal(consolidado.body.datos[0].registros, 2);
   assert.equal(consolidado.body.datos[0].elementos, 75);
+  const fichaInstitucion = await request(app)
+    .get(`/api/instituciones/${resultado.institucion.id}`)
+    .set(auth).expect(200);
+  assert.equal(Number(fichaInstitucion.body.reintegros.n), 3);
+  assert.equal(Number(fichaInstitucion.body.reintegros.elementos), 76);
+  const sillas = fichaInstitucion.body.reintegros.por_articulo.find(x => x.articulo === 'SILLA');
+  assert.equal(Number(sillas.registros), 2);
+  assert.equal(Number(sillas.elementos), 75);
 
   const archivoEjemplo = path.join(__dirname, '..', '..', 'docs', 'ejemplos', 'acta_reintegro_EJEMPLO.xlsx');
   const previa = await request(app)

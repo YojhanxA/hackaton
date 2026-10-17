@@ -116,15 +116,20 @@ r.get('/instituciones/:id', asincrono(async (req, res) => {
     consultar('SELECT id, archivo, nombre_original, tipo_mime, tamano_bytes, es_principal, orden, creado_en FROM institucion_imagenes WHERE institucion_id = $1 ORDER BY es_principal DESC, orden, id', [iid]),
     consultar(`SELECT count(*) AS n, coalesce(sum(cantidad), 0) AS elementos,
         count(*) FILTER (WHERE estado = 'realizado') AS realizados, count(*) FILTER (WHERE estado = 'pendiente') AS pendientes,
+        count(*) FILTER (WHERE estado = 'rechazado') AS rechazados,
         coalesce(sum(cantidad) FILTER (WHERE estado = 'pendiente'), 0) AS elementos_pendientes,
         coalesce(sum(cantidad) FILTER (WHERE categoria = 'mobiliario'), 0) AS mobiliario, coalesce(sum(cantidad) FILTER (WHERE categoria = 'electrico'), 0) AS electrico,
         max(fecha_reintegro) AS ultimo FROM reintegros WHERE institucion_id = $1 AND estado <> 'anulado'`, [iid]),
-    consultar(`SELECT coalesce(articulo, 'SIN DESCRIPCION') AS articulo, categoria, coalesce(sum(cantidad), 0) AS elementos FROM reintegros
-        WHERE institucion_id = $1 AND estado <> 'anulado' GROUP BY 1, 2 ORDER BY elementos DESC, 1 LIMIT 8`, [iid])
+    consultar(`SELECT coalesce(articulo, 'SIN DESCRIPCION') AS articulo, coalesce(categoria, 'electrico') AS categoria,
+        count(*) AS registros, coalesce(sum(cantidad), 0) AS elementos FROM reintegros
+        WHERE institucion_id = $1 AND estado <> 'anulado' GROUP BY 1, 2 ORDER BY elementos DESC, 1`, [iid])
   ]);
+  const totales = Object.fromEntries(['n', 'elementos', 'realizados', 'pendientes', 'rechazados', 'elementos_pendientes', 'mobiliario', 'electrico']
+    .map(k => [k, Number(rz.rows[0][k])]));
+  const porArticulo = art.rows.map(x => Object.assign(x, { registros: Number(x.registros), elementos: Number(x.elementos) }));
   res.json(Object.assign(presentar(rows[0]), {
     imagenes: im.rows.map(x => Object.assign(x, { url: urlImagen(x.archivo) })),
-    reintegros: Object.assign(rz.rows[0], { por_articulo: art.rows })
+    reintegros: Object.assign(totales, { ultimo: rz.rows[0].ultimo, por_articulo: porArticulo })
   }));
 }));
 

@@ -111,7 +111,7 @@ Para quitar los reintegros de demostración: `npm run seed:demo -- --borrar`. **
 | Reintegros | Registro, edición, cambio de estado, filtros (fechas, institución, estado, municipio, texto), duplicados rechazados | Registra el mismo reintegro dos veces: el segundo se rechaza |
 | Informes | Totales por estado (los realizados aparte de pendientes, rechazados y anulados), por mes, por institución y municipio, valores, comparación con el período anterior, exportación .xlsx con hojas Resumen y Detalle | Filtra un rango y exporta: el Detalle tiene las mismas filas que el resumen |
 | Trazabilidad | Bitácora de solo inserción con huella SHA-256 encadenada, verificación, anclaje en blockchain con MetaMask, recibos verificados contra la red | “Verificar ahora” y “Anclar historial actual” |
-| Análisis territorial | La versión anterior completa, con sus simulaciones de manipulación | Abre el módulo |
+| Análisis territorial | La versión anterior completa; el asistente consulta por institución los reintegros actuales y sus familias desde el backend. Conectividad, TIC, mobiliario territorial y personal siguen siendo datos de demostración. | Inicia sesión y pregunta, por ejemplo, “¿Qué reintegros tiene la Institución Educativa El Diamante?” |
 | Configuración | Origen de las rutas (editable con clic en el mapa), servicios externos, usuarios | Cambia el origen: las rutas nuevas salen de ahí |
 
 ## 6. Pruebas
